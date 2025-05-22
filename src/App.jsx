@@ -1,0 +1,315 @@
+import React, { useState, useRef } from 'react';
+
+// Mock Data
+const mockPlayers = [
+  { id: 1, name: "John Smith", number: 23, position: "Point Guard", markerCount: 15 },
+  { id: 2, name: "Mike Johnson", number: 10, position: "Center", markerCount: 8 },
+  { id: 3, name: "Alex Brown", number: 7, position: "Forward", markerCount: 12 },
+  { id: 4, name: "Chris Davis", number: 15, position: "Guard", markerCount: 6 },
+  { id: 5, name: "Ryan Wilson", number: 32, position: "Forward", markerCount: 9 }
+];
+
+const mockMarkers = [
+  { id: 1, timestamp: 750, playerId: 1, description: "Great steal and fast break", type: "positive" },
+  { id: 2, timestamp: 1125, playerId: 2, description: "Perfect 3-pointer from corner", type: "positive" },
+  { id: 3, timestamp: 1512, playerId: 3, description: "Missed defensive assignment", type: "improvement" },
+  { id: 4, timestamp: 2000, playerId: 1, description: "Excellent court vision on assist", type: "positive" }
+];
+
+const mockGame = {
+  id: 1,
+  opponent: "Lakers",
+  date: "2024-03-15",
+  videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4", // Sample video
+  duration: 2880 // 48 minutes in seconds
+};
+
+// Video Player Component
+const VideoPlayer = ({ game, markers, onAddMarker, selectedPlayer }) => {
+  const videoRef = useRef(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const handleVideoClick = (e) => {
+    if (!videoRef.current) return;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const videoWidth = rect.width;
+    const clickPercentage = clickX / videoWidth;
+    const newTimestamp = Math.floor(clickPercentage * videoRef.current.duration);
+    
+    // Add marker at clicked position
+    onAddMarker(newTimestamp, selectedPlayer);
+  };
+
+  const handleTimeUpdate = () => {
+    if (videoRef.current) {
+      setCurrentTime(videoRef.current.currentTime);
+    }
+  };
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const jumpToMarker = (timestamp) => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = timestamp;
+    }
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-lg p-6">
+      <h2 className="text-2xl font-bold mb-4">Game vs {game.opponent} - {game.date}</h2>
+      
+      {/* Video Container */}
+      <div className="relative bg-black rounded-lg overflow-hidden mb-4 cursor-pointer" onClick={handleVideoClick}>
+        <video
+          ref={videoRef}
+          src={game.videoUrl}
+          className="w-full h-64 md:h-96"
+          onTimeUpdate={handleTimeUpdate}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+        />
+        
+        {/* Click overlay hint */}
+        <div className="absolute top-4 right-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded text-sm">
+          Click anywhere to add marker
+        </div>
+      </div>
+
+      {/* Timeline */}
+      <div className="relative bg-gray-200 h-12 rounded-lg mb-4 overflow-hidden">
+        {/* Progress bar */}
+        <div 
+          className="absolute top-0 left-0 h-full bg-blue-500 opacity-30 transition-all duration-100"
+          style={{ width: videoRef.current ? `${(currentTime / videoRef.current.duration) * 100}%` : '0%' }}
+        />
+        
+        {/* Markers */}
+        {markers.map(marker => (
+          <div
+            key={marker.id}
+            className={`absolute w-3 h-3 rounded-full cursor-pointer top-1/2 transform -translate-y-1/2 ${
+              marker.type === 'positive' ? 'bg-green-500' : 'bg-yellow-500'
+            } hover:scale-125 transition-transform`}
+            style={{ left: `${(marker.timestamp / game.duration) * 100}%` }}
+            onClick={() => jumpToMarker(marker.timestamp)}
+            title={`${formatTime(marker.timestamp)} - ${marker.description}`}
+          />
+        ))}
+        
+        {/* Time labels */}
+        <div className="absolute bottom-1 left-2 text-xs text-gray-600">{formatTime(currentTime)}</div>
+        <div className="absolute bottom-1 right-2 text-xs text-gray-600">{formatTime(game.duration)}</div>
+      </div>
+
+      {/* Controls */}
+      <div className="flex flex-wrap gap-2 justify-center">
+        <button 
+          onClick={togglePlay}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+        >
+          {isPlaying ? '⏸️ Pause' : '▶️ Play'}
+        </button>
+        <button 
+          onClick={() => onAddMarker(currentTime, selectedPlayer)}
+          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors"
+        >
+          🏷️ Add Marker
+        </button>
+        <button className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 transition-colors">
+          ✂️ Create Clip
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Player List Component
+const PlayerList = ({ players, selectedPlayer, onSelectPlayer }) => {
+  return (
+    <div className="bg-white rounded-lg shadow-lg p-6">
+      <h3 className="text-xl font-bold mb-4">Team Roster</h3>
+      <div className="space-y-2">
+        {players.map(player => (
+          <div
+            key={player.id}
+            onClick={() => onSelectPlayer(player)}
+            className={`p-3 rounded-lg cursor-pointer transition-colors ${
+              selectedPlayer?.id === player.id 
+                ? 'bg-blue-100 border-2 border-blue-500' 
+                : 'bg-gray-50 hover:bg-gray-100 border-2 border-transparent'
+            }`}
+          >
+            <div className="font-semibold">#{player.number} {player.name}</div>
+            <div className="text-sm text-gray-600">{player.position}</div>
+            <div className="text-xs text-blue-600">{player.markerCount} markers</div>
+          </div>
+        ))}
+      </div>
+      
+      <button className="w-full mt-4 bg-green-500 text-white py-2 rounded hover:bg-green-600 transition-colors">
+        + Add Player
+      </button>
+    </div>
+  );
+};
+
+// Markers List Component
+const MarkersList = ({ markers, players, onDeleteMarker }) => {
+  const getPlayerName = (playerId) => {
+    const player = players.find(p => p.id === playerId);
+    return player ? `#${player.number} ${player.name}` : 'Unknown Player';
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-lg p-6">
+      <h3 className="text-xl font-bold mb-4">Game Markers ({markers.length})</h3>
+      <div className="space-y-3 max-h-64 overflow-y-auto">
+        {markers.map(marker => (
+          <div
+            key={marker.id}
+            className={`p-3 rounded-lg border-l-4 ${
+              marker.type === 'positive' ? 'border-green-500 bg-green-50' : 'border-yellow-500 bg-yellow-50'
+            }`}
+          >
+            <div className="flex justify-between items-start">
+              <div>
+                <div className="font-semibold text-blue-600">{formatTime(marker.timestamp)}</div>
+                <div className="text-sm font-medium">{getPlayerName(marker.playerId)}</div>
+                <div className="text-sm text-gray-700">{marker.description}</div>
+              </div>
+              <button
+                onClick={() => onDeleteMarker(marker.id)}
+                className="text-red-500 hover:text-red-700 text-sm"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      {markers.length === 0 && (
+        <div className="text-center text-gray-500 py-8">
+          No markers yet. Click on the video to add some!
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Main Dashboard Component
+const Dashboard = () => {
+  const [markers, setMarkers] = useState(mockMarkers);
+  const [selectedPlayer, setSelectedPlayer] = useState(mockPlayers[0]);
+
+  const handleAddMarker = (timestamp, player) => {
+    if (!player) {
+      alert('Please select a player first!');
+      return;
+    }
+
+    const description = prompt(`Add marker for ${player.name} at ${Math.floor(timestamp / 60)}:${Math.floor(timestamp % 60).toString().padStart(2, '0')}:`);
+    
+    if (description) {
+      const newMarker = {
+        id: Date.now(),
+        timestamp,
+        playerId: player.id,
+        description,
+        type: 'positive' // Could add UI to select type
+      };
+      
+      setMarkers([...markers, newMarker]);
+    }
+  };
+
+  const handleDeleteMarker = (markerId) => {
+    setMarkers(markers.filter(m => m.id !== markerId));
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      {/* Header */}
+      <div className="bg-blue-600 text-white p-4">
+        <div className="container mx-auto flex justify-between items-center">
+          <h1 className="text-2xl font-bold">🏀 Coach Platform</h1>
+          <nav className="space-x-4">
+            <button className="hover:text-blue-200">Dashboard</button>
+            <button className="hover:text-blue-200">Upload</button>
+            <button className="hover:text-blue-200">Players</button>
+            <button className="hover:text-blue-200">Settings</button>
+          </nav>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="container mx-auto p-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Video Player - Takes up most space */}
+          <div className="lg:col-span-3">
+            <VideoPlayer 
+              game={mockGame}
+              markers={markers}
+              onAddMarker={handleAddMarker}
+              selectedPlayer={selectedPlayer}
+            />
+            
+            {/* Markers List below video */}
+            <div className="mt-6">
+              <MarkersList 
+                markers={markers}
+                players={mockPlayers}
+                onDeleteMarker={handleDeleteMarker}
+              />
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="lg:col-span-1">
+            <PlayerList 
+              players={mockPlayers}
+              selectedPlayer={selectedPlayer}
+              onSelectPlayer={setSelectedPlayer}
+            />
+            
+            {/* Quick Stats */}
+            <div className="mt-6 bg-white rounded-lg shadow-lg p-6">
+              <h3 className="text-xl font-bold mb-4">Quick Stats</h3>
+              <div className="space-y-2 text-sm">
+                <div>Total Markers: <span className="font-bold">{markers.length}</span></div>
+                <div>Selected Player: <span className="font-bold">{selectedPlayer?.name}</span></div>
+                <div>Game Duration: <span className="font-bold">48:00</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
