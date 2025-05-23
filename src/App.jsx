@@ -1,4 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { generateClient } from 'aws-amplify/data';
+import { Authenticator } from '@aws-amplify/ui-react';
+import '@aws-amplify/ui-react/styles.css';
+
+const client = generateClient();
 
 // Mock Data
 const mockPlayers = [
@@ -16,6 +21,7 @@ const mockMarkers = [
   { id: 4, timestamp: 2000, playerId: 1, description: "Excellent court vision on assist", type: "positive" }
 ];
 
+// Mock Game Data (temporary - will be replaced with real uploads)
 const mockGame = {
   id: 1,
   opponent: "Lakers",
@@ -222,7 +228,7 @@ const MarkersList = ({ markers, players, onDeleteMarker }) => {
 };
 
 // Main Dashboard Component
-const Dashboard = () => {
+const Dashboard = ({ user, signOut }) => {
   const [markers, setMarkers] = useState(mockMarkers);
   const [selectedPlayer, setSelectedPlayer] = useState(mockPlayers[0]);
 
@@ -257,12 +263,23 @@ const Dashboard = () => {
       <div className="bg-blue-600 text-white p-4">
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold">🏀 Coach Platform</h1>
-          <nav className="space-x-4">
-            <button className="hover:text-blue-200">Dashboard</button>
-            <button className="hover:text-blue-200">Upload</button>
-            <button className="hover:text-blue-200">Players</button>
-            <button className="hover:text-blue-200">Settings</button>
-          </nav>
+          <div className="flex items-center space-x-4">
+            <nav className="space-x-4">
+              <button className="hover:text-blue-200">Dashboard</button>
+              <button className="hover:text-blue-200">Upload</button>
+              <button className="hover:text-blue-200">Players</button>
+              <button className="hover:text-blue-200">Settings</button>
+            </nav>
+            <div className="flex items-center space-x-3 border-l border-blue-400 pl-3">
+              <span className="text-sm">Welcome, {user?.signInDetails?.loginId}</span>
+              <button 
+                onClick={signOut}
+                className="bg-blue-700 hover:bg-blue-800 px-3 py-1 rounded text-sm transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -312,4 +329,12 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default function App() {
+  return (
+    <Authenticator>
+      {({ signOut, user }) => (
+        <Dashboard user={user} signOut={signOut} />
+      )}
+    </Authenticator>
+  );
+}
