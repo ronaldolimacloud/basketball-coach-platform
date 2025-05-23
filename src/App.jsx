@@ -2,35 +2,18 @@ import React, { useState, useRef, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import { Authenticator } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
+import { 
+  VideoUploadModal, 
+  GameSelector, 
+  TeamSelector, 
+  Sidebar, 
+  MobileHeader, 
+  EnhancedTeamDashboard 
+} from './components';
 
 const client = generateClient();
 
-// Mock Data
-const mockPlayers = [
-  { id: 1, name: "John Smith", number: 23, position: "Point Guard", markerCount: 15 },
-  { id: 2, name: "Mike Johnson", number: 10, position: "Center", markerCount: 8 },
-  { id: 3, name: "Alex Brown", number: 7, position: "Forward", markerCount: 12 },
-  { id: 4, name: "Chris Davis", number: 15, position: "Guard", markerCount: 6 },
-  { id: 5, name: "Ryan Wilson", number: 32, position: "Forward", markerCount: 9 }
-];
-
-const mockMarkers = [
-  { id: 1, timestamp: 750, playerId: 1, description: "Great steal and fast break", type: "positive" },
-  { id: 2, timestamp: 1125, playerId: 2, description: "Perfect 3-pointer from corner", type: "positive" },
-  { id: 3, timestamp: 1512, playerId: 3, description: "Missed defensive assignment", type: "improvement" },
-  { id: 4, timestamp: 2000, playerId: 1, description: "Excellent court vision on assist", type: "positive" }
-];
-
-// Mock Game Data (temporary - will be replaced with real uploads)
-const mockGame = {
-  id: 1,
-  opponent: "Lakers",
-  date: "2024-03-15",
-  videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4", // Sample video
-  duration: 2880 // 48 minutes in seconds
-};
-
-// Video Player Component
+// Video Player Component - Enhanced for Mobile
 const VideoPlayer = ({ game, markers, onAddMarker, selectedPlayer }) => {
   const videoRef = useRef(null);
   const [currentTime, setCurrentTime] = useState(0);
@@ -45,7 +28,6 @@ const VideoPlayer = ({ game, markers, onAddMarker, selectedPlayer }) => {
     const clickPercentage = clickX / videoWidth;
     const newTimestamp = Math.floor(clickPercentage * videoRef.current.duration);
     
-    // Add marker at clicked position
     onAddMarker(newTimestamp, selectedPlayer);
   };
 
@@ -79,40 +61,43 @@ const VideoPlayer = ({ game, markers, onAddMarker, selectedPlayer }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
-      <h2 className="text-2xl font-bold mb-4">Game vs {game.opponent} - {game.date}</h2>
+    <div className="bg-white rounded-xl shadow-lg p-4 lg:p-6 border border-gray-100">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+        <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-2 sm:mb-0">
+          Game vs {game.opponent}
+        </h2>
+        <span className="text-sm text-gray-500">{game.date}</span>
+      </div>
       
-      {/* Video Container */}
       <div className="relative bg-black rounded-lg overflow-hidden mb-4 cursor-pointer" onClick={handleVideoClick}>
         <video
           ref={videoRef}
           src={game.videoUrl}
-          className="w-full h-64 md:h-96"
+          className="w-full h-48 sm:h-64 lg:h-96 object-cover"
           onTimeUpdate={handleTimeUpdate}
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
         />
         
-        {/* Click overlay hint */}
-        <div className="absolute top-4 right-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded text-sm">
-          Click anywhere to add marker
+        <div className="absolute top-2 right-2 bg-black bg-opacity-60 text-white px-3 py-1 rounded text-xs lg:text-sm">
+          👆 Tap to add marker
         </div>
       </div>
 
-      {/* Timeline */}
-      <div className="relative bg-gray-200 h-12 rounded-lg mb-4 overflow-hidden">
-        {/* Progress bar */}
+      {/* Enhanced Timeline for Mobile */}
+      <div className="relative bg-gray-200 h-10 lg:h-12 rounded-lg mb-4 overflow-hidden">
         <div 
           className="absolute top-0 left-0 h-full bg-blue-500 opacity-30 transition-all duration-100"
           style={{ width: videoRef.current ? `${(currentTime / videoRef.current.duration) * 100}%` : '0%' }}
         />
         
-        {/* Markers */}
         {markers.map(marker => (
           <div
             key={marker.id}
-            className={`absolute w-3 h-3 rounded-full cursor-pointer top-1/2 transform -translate-y-1/2 ${
-              marker.type === 'positive' ? 'bg-green-500' : 'bg-yellow-500'
+            className={`absolute w-3 h-3 lg:w-4 lg:h-4 rounded-full cursor-pointer top-1/2 transform -translate-y-1/2 ${
+              marker.type === 'positive' ? 'bg-green-500 shadow-lg shadow-green-200' : 
+              marker.type === 'improvement' ? 'bg-yellow-500 shadow-lg shadow-yellow-200' :
+              'bg-blue-500 shadow-lg shadow-blue-200'
             } hover:scale-125 transition-transform`}
             style={{ left: `${(marker.timestamp / game.duration) * 100}%` }}
             onClick={() => jumpToMarker(marker.timestamp)}
@@ -120,67 +105,86 @@ const VideoPlayer = ({ game, markers, onAddMarker, selectedPlayer }) => {
           />
         ))}
         
-        {/* Time labels */}
         <div className="absolute bottom-1 left-2 text-xs text-gray-600">{formatTime(currentTime)}</div>
         <div className="absolute bottom-1 right-2 text-xs text-gray-600">{formatTime(game.duration)}</div>
       </div>
 
-      {/* Controls */}
+      {/* Enhanced Controls for Mobile */}
       <div className="flex flex-wrap gap-2 justify-center">
         <button 
           onClick={togglePlay}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+          className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors font-medium text-sm lg:text-base"
         >
           {isPlaying ? '⏸️ Pause' : '▶️ Play'}
         </button>
         <button 
           onClick={() => onAddMarker(currentTime, selectedPlayer)}
-          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors"
+          className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors font-medium text-sm lg:text-base"
+          disabled={!selectedPlayer}
         >
           🏷️ Add Marker
         </button>
-        <button className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 transition-colors">
+        <button className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition-colors font-medium text-sm lg:text-base">
           ✂️ Create Clip
         </button>
       </div>
+      
+      {!selectedPlayer && (
+        <p className="text-xs text-gray-500 text-center mt-2">Select a player to add markers</p>
+      )}
     </div>
   );
 };
 
-// Player List Component
-const PlayerList = ({ players, selectedPlayer, onSelectPlayer, onAddPlayer }) => {
+// Enhanced Player List Component - Mobile First
+const PlayerList = ({ players, selectedPlayer, onSelectPlayer, onAddPlayer, selectedTeam }) => {
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
-      <h3 className="text-xl font-bold mb-4">Team Roster</h3>
-      <div className="space-y-2">
+    <div className="bg-white rounded-xl shadow-lg p-4 lg:p-6 border border-gray-100">
+      <h3 className="text-lg lg:text-xl font-bold mb-4 text-gray-900">
+        {selectedTeam ? `${selectedTeam.name} Roster` : 'Team Roster'}
+      </h3>
+      
+      <div className="space-y-2 max-h-64 lg:max-h-96 overflow-y-auto">
         {players.map(player => (
           <div
             key={player.id}
             onClick={() => onSelectPlayer(player)}
-            className={`p-3 rounded-lg cursor-pointer transition-colors ${
+            className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
               selectedPlayer?.id === player.id 
-                ? 'bg-blue-100 border-2 border-blue-500' 
-                : 'bg-gray-50 hover:bg-gray-100 border-2 border-transparent'
+                ? 'bg-blue-50 border-2 border-blue-500 shadow-md' 
+                : 'bg-gray-50 hover:bg-gray-100 border-2 border-transparent hover:shadow-sm'
             }`}
           >
-            <div className="font-semibold">#{player.number} {player.name}</div>
-            <div className="text-sm text-gray-600">{player.position}</div>
-            <div className="text-xs text-blue-600">{player.markerCount} markers</div>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-semibold text-gray-900">#{player.number} {player.name}</div>
+                <div className="text-sm text-gray-600">{player.position}</div>
+                {player.grade && <div className="text-xs text-gray-500">{player.grade}</div>}
+              </div>
+              {selectedPlayer?.id === player.id && (
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+              )}
+            </div>
           </div>
         ))}
       </div>
       
       <button 
         onClick={onAddPlayer}
-        className="w-full mt-4 bg-green-500 text-white py-2 rounded hover:bg-green-600 transition-colors"
+        disabled={!selectedTeam}
+        className="w-full mt-4 bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
       >
-        + Add Player
+        + Add Player {selectedTeam ? `to ${selectedTeam.name}` : ''}
       </button>
+      
+      {!selectedTeam && (
+        <p className="text-xs text-gray-500 mt-2 text-center">Select a team to manage players</p>
+      )}
     </div>
   );
 };
 
-// Markers List Component
+// Enhanced Markers List Component - Mobile First
 const MarkersList = ({ markers, players, onDeleteMarker }) => {
   const getPlayerName = (playerId) => {
     const player = players.find(p => p.id === playerId);
@@ -193,71 +197,159 @@ const MarkersList = ({ markers, players, onDeleteMarker }) => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const getMarkerIcon = (type) => {
+    switch(type) {
+      case 'positive': return '👍';
+      case 'improvement': return '⚠️';
+      default: return '📝';
+    }
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
-      <h3 className="text-xl font-bold mb-4">Game Markers ({markers.length})</h3>
-      <div className="space-y-3 max-h-64 overflow-y-auto">
+    <div className="bg-white rounded-xl shadow-lg p-4 lg:p-6 border border-gray-100">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg lg:text-xl font-bold text-gray-900">Game Markers</h3>
+        <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-medium">
+          {markers.length}
+        </span>
+      </div>
+      
+      <div className="space-y-3 max-h-64 lg:max-h-96 overflow-y-auto">
         {markers.map(marker => (
           <div
             key={marker.id}
-            className={`p-3 rounded-lg border-l-4 ${
+            className={`p-4 rounded-lg border-l-4 ${
               marker.type === 'positive' ? 'border-green-500 bg-green-50' : 
               marker.type === 'improvement' ? 'border-yellow-500 bg-yellow-50' :
               'border-blue-500 bg-blue-50'
             }`}
           >
             <div className="flex justify-between items-start">
-              <div>
-                <div className="font-semibold text-blue-600">{formatTime(marker.timestamp)}</div>
-                <div className="text-sm font-medium">{getPlayerName(marker.playerId)}</div>
-                <div className="text-sm text-gray-700">{marker.description}</div>
+              <div className="flex-1">
+                <div className="flex items-center space-x-2 mb-2">
+                  <span className="text-lg">{getMarkerIcon(marker.type)}</span>
+                  <div className="font-semibold text-blue-600">{formatTime(marker.timestamp)}</div>
+                </div>
+                <div className="text-sm font-medium text-gray-900 mb-1">{getPlayerName(marker.playerId)}</div>
+                <div className="text-sm text-gray-700 mb-2">{marker.description}</div>
                 {marker.category && (
-                  <div className="text-xs text-gray-500 mt-1">
-                    {marker.category} • {marker.priority}
+                  <div className="flex flex-wrap gap-2">
+                    <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                      {marker.category}
+                    </span>
+                    <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                      marker.priority === 'high' ? 'bg-red-100 text-red-700' :
+                      marker.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {marker.priority}
+                    </span>
                   </div>
                 )}
               </div>
               <button
                 onClick={() => onDeleteMarker(marker.id)}
-                className="text-red-500 hover:text-red-700 text-sm"
+                className="text-red-500 hover:text-red-700 text-sm p-2 hover:bg-red-50 rounded transition-colors"
               >
-                ✕
+                ❌
               </button>
             </div>
           </div>
         ))}
+        
+        {markers.length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            <span className="text-4xl mb-4 block">📝</span>
+            <p>No markers yet</p>
+            <p className="text-xs mt-1">Click on the video timeline to add markers</p>
+          </div>
+        )}
       </div>
-      
-      {markers.length === 0 && (
-        <div className="text-center text-gray-500 py-8">
-          No markers yet. Click on the video to add some!
-        </div>
-      )}
     </div>
   );
 };
 
-// Main Dashboard Component
+// Main Dashboard Component with Mobile-First Layout
 const Dashboard = ({ user, signOut }) => {
+  // Team Management State
+  const [teams, setTeams] = useState([]);
+  const [selectedTeam, setSelectedTeam] = useState(null);
+  
+  // Team-specific Data State
   const [markers, setMarkers] = useState([]);
   const [players, setPlayers] = useState([]);
   const [games, setGames] = useState([]);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [selectedGame, setSelectedGame] = useState(null);
+  
+  // UI State
   const [loading, setLoading] = useState(true);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [showTeamSelector, setShowTeamSelector] = useState(false);
+  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard', 'analysis', 'players'
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Load data from AWS on component mount
+  // Load teams and initial data
   useEffect(() => {
-    const loadData = async () => {
+    const loadTeams = async () => {
       try {
         setLoading(true);
         
-        // Load players
-        const { data: playersData } = await client.models.Player.list();
+        // Load user's teams
+        const { data: teamsData, errors } = await client.models.Team.list();
+        
+        // Check for actual errors vs empty results
+        if (errors && errors.length > 0) {
+          console.error('Error loading teams:', errors);
+          alert('Error loading teams from database.');
+          return;
+        }
+        
+        setTeams(teamsData || []);
+        
+        // If teams exist, select the first active one
+        if (teamsData?.length > 0) {
+          const activeTeam = teamsData.find(team => team.isActive) || teamsData[0];
+          setSelectedTeam(activeTeam);
+        }
+        
+      } catch (error) {
+        console.error('Error loading teams:', error);
+        // Only show error for actual network/auth issues
+        if (error.name !== 'UnauthorizedError') {
+          alert('Error connecting to database. Please check your connection.');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTeams();
+  }, []);
+
+  // Load team-specific data when team changes
+  useEffect(() => {
+    const loadTeamData = async () => {
+      if (!selectedTeam?.id) {
+        setPlayers([]);
+        setGames([]);
+        setMarkers([]);
+        setSelectedPlayer(null);
+        setSelectedGame(null);
+        return;
+      }
+
+      try {
+        // Load team players
+        const { data: playersData } = await client.models.Player.list({
+          filter: { teamId: { eq: selectedTeam.id } }
+        });
         setPlayers(playersData || []);
         
-        // Load games  
-        const { data: gamesData } = await client.models.Game.list();
+        // Load team games  
+        const { data: gamesData } = await client.models.Game.list({
+          filter: { teamId: { eq: selectedTeam.id } }
+        });
         setGames(gamesData || []);
         
         // Set default selections
@@ -265,106 +357,74 @@ const Dashboard = ({ user, signOut }) => {
           setSelectedPlayer(playersData[0]);
         }
         if (gamesData?.length > 0) {
-          setSelectedGame(gamesData[0]);
-          
-          // Load markers for the selected game
-          const { data: markersData } = await client.models.Marker.list({
-            filter: { gameId: { eq: gamesData[0].id } }
-          });
-          setMarkers(markersData || []);
+          const completedGame = gamesData.find(game => game.uploadStatus === 'completed') || gamesData[0];
+          setSelectedGame(completedGame);
         }
         
       } catch (error) {
-        console.error('Error loading data:', error);
-        alert('Error loading data from database. Using sample data.');
-        
-        // Fallback to mock data if database fails
-        setPlayers(mockPlayers);
-        setSelectedPlayer(mockPlayers[0]);
-        setMarkers(mockMarkers);
-        setSelectedGame(mockGame);
-      } finally {
-        setLoading(false);
+        console.error('Error loading team data:', error);
       }
     };
 
-    loadData();
-  }, []);
+    loadTeamData();
+  }, [selectedTeam]);
 
   // Load markers when game changes
   useEffect(() => {
     const loadMarkers = async () => {
-      if (selectedGame?.id) {
+      if (selectedGame?.id && selectedTeam?.id) {
         try {
           const { data: markersData } = await client.models.Marker.list({
-            filter: { gameId: { eq: selectedGame.id } }
+            filter: { 
+              gameId: { eq: selectedGame.id },
+              teamId: { eq: selectedTeam.id }
+            }
           });
           setMarkers(markersData || []);
         } catch (error) {
           console.error('Error loading markers:', error);
         }
+      } else {
+        setMarkers([]);
       }
     };
 
     loadMarkers();
-  }, [selectedGame]);
+  }, [selectedGame, selectedTeam]);
 
-  const handleAddMarker = async (timestamp, player) => {
-    if (!player) {
-      alert('Please select a player first!');
-      return;
-    }
-
-    if (!selectedGame) {
-      alert('Please select a game first!');
-      return;
-    }
-
-    const description = prompt(`Add marker for ${player.name} at ${Math.floor(timestamp / 60)}:${Math.floor(timestamp % 60).toString().padStart(2, '0')}:`);
-    
-    if (description) {
-      try {
-        // Save to AWS database
-        const { data: newMarker } = await client.models.Marker.create({
-          timestamp: parseFloat(timestamp),
-          playerId: player.id,
-          gameId: selectedGame.id,
-          description,
-          type: 'positive', // Could add UI to select type
-          category: 'general',
-          priority: 'medium'
-        });
-        
-        if (newMarker) {
-          // Update local state
-          setMarkers(prev => [...prev, newMarker]);
-        }
-        
-      } catch (error) {
-        console.error('Error creating marker:', error);
-        alert('Failed to save marker to database');
-      }
-    }
-  };
-
-  const handleDeleteMarker = async (markerId) => {
+  // Team Management Functions
+  const handleCreateTeam = async (teamData) => {
     try {
-      // Delete from AWS database
-      await client.models.Marker.delete({ id: markerId });
+      const { data: newTeam } = await client.models.Team.create({
+        ...teamData
+      });
       
-      // Update local state
-      setMarkers(markers.filter(m => m.id !== markerId));
-      
+      setTeams(prev => [...prev, newTeam]);
+      setSelectedTeam(newTeam);
+      setShowTeamSelector(false);
     } catch (error) {
-      console.error('Error deleting marker:', error);
-      alert('Failed to delete marker from database');
+      console.error('Error creating team:', error);
+      alert('Failed to create team');
     }
   };
 
+  const handleSelectTeam = (team) => {
+    setSelectedTeam(team);
+    setShowTeamSelector(false);
+    setCurrentView('dashboard');
+  };
+
+  // Player Management Functions
   const handleAddPlayer = async () => {
+    if (!selectedTeam) {
+      alert('Please select a team first!');
+      return;
+    }
+
     const name = prompt('Player name:');
     const number = prompt('Jersey number:');
     const position = prompt('Position:');
+    const grade = prompt('Grade (optional):');
     
     if (name && number && position) {
       try {
@@ -372,7 +432,8 @@ const Dashboard = ({ user, signOut }) => {
           name,
           number: parseInt(number),
           position,
-          team: 'Main Team',
+          grade: grade || undefined,
+          teamId: selectedTeam.id,
           active: true
         });
         
@@ -387,151 +448,289 @@ const Dashboard = ({ user, signOut }) => {
     }
   };
 
-  // Sample data seeding function
-  const seedSampleData = async () => {
-    try {
-      console.log('Seeding sample data...');
-      
-      // Create sample players
-      const samplePlayers = [
-        { name: "John Smith", number: 23, position: "Point Guard", team: "Main Team", active: true },
-        { name: "Mike Johnson", number: 10, position: "Center", team: "Main Team", active: true },
-        { name: "Alex Brown", number: 7, position: "Forward", team: "Main Team", active: true },
-        { name: "Chris Davis", number: 15, position: "Guard", team: "Main Team", active: true },
-        { name: "Ryan Wilson", number: 32, position: "Forward", team: "Main Team", active: true }
-      ];
+  // Marker Management Functions
+  const handleAddMarker = async (timestamp, player) => {
+    if (!player) {
+      alert('Please select a player first!');
+      return;
+    }
 
-      for (const player of samplePlayers) {
-        await client.models.Player.create(player);
+    if (!selectedGame || !selectedTeam) {
+      alert('Please select a game and team first!');
+      return;
+    }
+
+    const description = prompt(`Add marker for ${player.name} at ${Math.floor(timestamp / 60)}:${Math.floor(timestamp % 60).toString().padStart(2, '0')}:`);
+    
+    if (description) {
+      try {
+        const { data: newMarker } = await client.models.Marker.create({
+          timestamp: parseFloat(timestamp),
+          playerId: player.id,
+          gameId: selectedGame.id,
+          teamId: selectedTeam.id,
+          description,
+          type: 'positive',
+          category: 'general',
+          priority: 'medium'
+        });
+        
+        if (newMarker) {
+          setMarkers(prev => [...prev, newMarker]);
+        }
+        
+      } catch (error) {
+        console.error('Error creating marker:', error);
+        alert('Failed to save marker to database');
       }
-
-      // Create a sample game
-      await client.models.Game.create({
-        opponent: "Lakers",
-        date: "2024-03-15",
-        gameType: "Regular",
-        videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-        duration: 2880,
-        score: "110-105",
-        notes: "Great team performance"
-      });
-
-      console.log('Sample data seeded successfully!');
-      return true;
-    } catch (error) {
-      console.error('Error seeding sample data:', error);
-      return false;
     }
   };
 
-  const handleSeedData = async () => {
-    const confirm = window.confirm('This will add sample players and a game to your database. Continue?');
-    if (confirm) {
-      const success = await seedSampleData();
-      if (success) {
-        alert('Sample data added successfully! Refreshing...');
-        window.location.reload(); // Refresh to load new data
-      } else {
-        alert('Failed to seed sample data. Check console for errors.');
-      }
+  const handleDeleteMarker = async (markerId) => {
+    try {
+      await client.models.Marker.delete({ id: markerId });
+      setMarkers(markers.filter(m => m.id !== markerId));
+    } catch (error) {
+      console.error('Error deleting marker:', error);
+      alert('Failed to delete marker from database');
     }
+  };
+
+  // Upload Management Functions
+  const handleUploadComplete = async (newGame) => {
+    try {
+      // Refresh games list to include the new upload
+      const { data: gamesData } = await client.models.Game.list({
+        filter: { teamId: { eq: selectedTeam.id } }
+      });
+      setGames(gamesData || []);
+      
+      // Select the newly uploaded game
+      if (newGame) {
+        setSelectedGame(newGame);
+        setMarkers([]);
+      }
+      
+      console.log('Upload completed for game:', newGame);
+    } catch (error) {
+      console.error('Error refreshing games after upload:', error);
+    }
+  };
+
+  // Calculate stats for sidebar
+  const stats = {
+    totalPlayers: players.length,
+    totalGames: games.length,
+    totalMarkers: markers.length
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading basketball platform...</p>
+          <p className="text-gray-600">Loading your coaching platform...</p>
+          <p className="text-sm text-gray-500 mt-2">Setting up teams and data</p>
         </div>
       </div>
     );
   }
 
-  // Use selected game or fallback to mock
-  const currentGame = selectedGame || mockGame;
-
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Header */}
-      <div className="bg-blue-600 text-white p-4">
-        <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold">🏀 Coach Platform</h1>
-          <div className="flex items-center space-x-4">
-            <nav className="space-x-4">
-              <button className="hover:text-blue-200">Dashboard</button>
-              <button className="hover:text-blue-200">Upload</button>
-              <button className="hover:text-blue-200">Players</button>
-              <button className="hover:text-blue-200">Settings</button>
-            </nav>
-            <div className="flex items-center space-x-3 border-l border-blue-400 pl-3">
-              <span className="text-sm">Welcome, {user?.signInDetails?.loginId}</span>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar - Hidden on mobile, overlay on mobile when open */}
+      <Sidebar
+        currentView={currentView}
+        onViewChange={setCurrentView}
+        selectedTeam={selectedTeam}
+        onTeamSelect={() => setShowTeamSelector(true)}
+        onUpload={() => setUploadModalOpen(true)}
+        isMobileMenuOpen={isMobileMenuOpen}
+        onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        stats={stats}
+      />
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Mobile Header */}
+        <MobileHeader
+          user={user}
+          signOut={signOut}
+          selectedTeam={selectedTeam}
+          onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          isMobileMenuOpen={isMobileMenuOpen}
+        />
+
+        {/* Desktop Header - Hidden on mobile */}
+        <div className="hidden lg:block bg-white border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {currentView === 'dashboard' && 'Dashboard'}
+                {currentView === 'analysis' && 'Video Analysis'}
+                {currentView === 'players' && 'Player Management'}
+                {currentView === 'games' && 'Games'}
+              </h1>
+              {selectedTeam && (
+                <p className="text-sm text-gray-600 mt-1">
+                  {selectedTeam.name} • {selectedTeam.ageGroup} • {selectedTeam.season}
+                </p>
+              )}
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-600">Welcome, {user?.signInDetails?.loginId}</span>
               <button 
                 onClick={signOut}
-                className="bg-blue-700 hover:bg-blue-800 px-3 py-1 rounded text-sm transition-colors"
+                className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition-colors"
               >
                 Sign Out
               </button>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="container mx-auto p-4">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Video Player - Takes up most space */}
-          <div className="lg:col-span-3">
-            <VideoPlayer 
-              game={currentGame}
-              markers={markers}
-              onAddMarker={handleAddMarker}
-              selectedPlayer={selectedPlayer}
-            />
-            
-            {/* Markers List below video */}
-            <div className="mt-6">
-              <MarkersList 
-                markers={markers}
-                players={players}
-                onDeleteMarker={handleDeleteMarker}
+        {/* Main Content */}
+        <div className="flex-1 overflow-auto">
+          {/* Show Team Selector if no teams or user wants to switch */}
+          {(teams.length === 0 || showTeamSelector) && (
+            <div className="p-4 lg:p-6">
+              <TeamSelector
+                teams={teams}
+                selectedTeam={selectedTeam}
+                onSelectTeam={handleSelectTeam}
+                onCreateTeam={handleCreateTeam}
               />
             </div>
-          </div>
+          )}
 
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <PlayerList 
-              players={players}
-              selectedPlayer={selectedPlayer}
-              onSelectPlayer={setSelectedPlayer}
-              onAddPlayer={handleAddPlayer}
-            />
-            
-            {/* Quick Stats */}
-            <div className="mt-6 bg-white rounded-lg shadow-lg p-6">
-              <h3 className="text-xl font-bold mb-4">Quick Stats</h3>
-              <div className="space-y-2 text-sm">
-                <div>Total Markers: <span className="font-bold">{markers.length}</span></div>
-                <div>Total Players: <span className="font-bold">{players.length}</span></div>
-                <div>Selected Player: <span className="font-bold">{selectedPlayer?.name || 'None'}</span></div>
-                <div>Current Game: <span className="font-bold">{currentGame?.opponent || 'None'}</span></div>
-              </div>
-              
-              {/* Sample Data Button */}
-              {players.length === 0 && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <p className="text-sm text-gray-600 mb-2">No data found. Want to start with sample data?</p>
-                  <button
-                    onClick={handleSeedData}
-                    className="w-full bg-purple-500 text-white py-2 px-4 rounded text-sm hover:bg-purple-600 transition-colors"
-                  >
-                    🌱 Add Sample Data
-                  </button>
+          {/* Main Dashboard Content */}
+          {selectedTeam && !showTeamSelector && (
+            <>
+              {currentView === 'dashboard' && (
+                <EnhancedTeamDashboard
+                  selectedTeam={selectedTeam}
+                  players={players}
+                  games={games}
+                  markers={markers}
+                  onSwitchTeam={() => setShowTeamSelector(true)}
+                  onUploadClick={() => setUploadModalOpen(true)}
+                  onManagePlayersClick={() => setCurrentView('players')}
+                  onViewAnalyticsClick={() => setCurrentView('analysis')}
+                />
+              )}
+
+              {currentView === 'analysis' && (
+                <div className="p-4 lg:p-6">
+                  <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+                    {/* Video Analysis - Takes up most space */}
+                    <div className="xl:col-span-3 space-y-6">
+                      {selectedGame && selectedGame.uploadStatus === 'completed' && selectedGame.videoUrl ? (
+                        <>
+                          <VideoPlayer 
+                            game={selectedGame}
+                            markers={markers}
+                            onAddMarker={handleAddMarker}
+                            selectedPlayer={selectedPlayer}
+                          />
+                          
+                          {/* Markers List below video */}
+                          <MarkersList 
+                            markers={markers}
+                            players={players}
+                            onDeleteMarker={handleDeleteMarker}
+                          />
+                        </>
+                      ) : (
+                        /* Game Selector when no video is ready */
+                        <GameSelector
+                          games={games}
+                          selectedGame={selectedGame}
+                          onSelectGame={setSelectedGame}
+                          onUploadClick={() => setUploadModalOpen(true)}
+                        />
+                      )}
+                    </div>
+
+                    {/* Sidebar */}
+                    <div className="xl:col-span-1">
+                      <PlayerList 
+                        players={players}
+                        selectedPlayer={selectedPlayer}
+                        onSelectPlayer={setSelectedPlayer}
+                        onAddPlayer={handleAddPlayer}
+                        selectedTeam={selectedTeam}
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
-            </div>
-          </div>
+
+              {currentView === 'players' && (
+                <div className="p-4 lg:p-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2">
+                      <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                        <h3 className="text-xl font-bold mb-6 text-gray-900">{selectedTeam.name} Players</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {players.map(player => (
+                            <div key={player.id} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                              <div className="font-semibold text-gray-900">#{player.number} {player.name}</div>
+                              <div className="text-sm text-gray-600">{player.position}</div>
+                              {player.grade && <div className="text-xs text-gray-500">{player.grade}</div>}
+                              {player.height && <div className="text-xs text-gray-500">Height: {player.height}</div>}
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {players.length === 0 && (
+                          <div className="text-center py-12 text-gray-500">
+                            <span className="text-6xl mb-4 block">👥</span>
+                            <p className="text-lg mb-2">No players added to {selectedTeam.name} yet</p>
+                            <button
+                              onClick={handleAddPlayer}
+                              className="mt-4 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium transition-colors"
+                            >
+                              Add your first player →
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="lg:col-span-1">
+                      <PlayerList 
+                        players={players}
+                        selectedPlayer={selectedPlayer}
+                        onSelectPlayer={setSelectedPlayer}
+                        onAddPlayer={handleAddPlayer}
+                        selectedTeam={selectedTeam}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {currentView === 'games' && (
+                <div className="p-4 lg:p-6">
+                  <GameSelector
+                    games={games}
+                    selectedGame={selectedGame}
+                    onSelectGame={setSelectedGame}
+                    onUploadClick={() => setUploadModalOpen(true)}
+                  />
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Upload Modal */}
+          <VideoUploadModal
+            isOpen={uploadModalOpen}
+            onClose={() => setUploadModalOpen(false)}
+            onUploadComplete={handleUploadComplete}
+            selectedTeam={selectedTeam}
+          />
         </div>
       </div>
     </div>
